@@ -8,7 +8,7 @@
   "use strict";
   if (window.BinokelHjalp && window.BinokelHjalp.version) return;
 
-  var VERSION = "1.0.0";
+  var VERSION = "1.0.1";
   var IRIS_URL = "https://northern-lens-learning-quest.lovable.app/fraga?inbaddad=1&app=";
   var Z = 2147483000;
   var STATUS = {
@@ -120,7 +120,7 @@
   // ---------- Stil ----------
 
   var CSS =
-    ":host{all:initial;pointer-events:auto!important;--navy:#2d3e66;--navy2:#24325a;--orange:#e6670c;" +
+    ":host{all:initial;pointer-events:auto!important;--navy:#2d3e66;--navy2:#24325a;--orange:#e6670c;--orange-strong:#b54d00;" +
     "--bg:#fff;--fg:#1f2a44;--muted:#5b6680;--line:#d9dee8;--hover:#eef1f7;--field:#fff;" +
     "--s-ny-bg:#eceef2;--s-ny:#4a5468;--s-redo-bg:#fdebdc;--s-redo:#9a4209;--s-ok-bg:#e1f3e6;--s-ok:#1e6b3a;" +
     "--s-ater-bg:#fde4ea;--s-ater:#a1203f;--err-bg:#fde4ea;--err:#a1203f;" +
@@ -147,7 +147,7 @@
     "@media (min-width:768px){.fab{bottom:calc(var(--bd) + env(safe-area-inset-bottom))}" +
     ".fab button{width:auto;padding:0 20px 0 14px}.fab .lbl{display:inline}}" +
     ".badge{position:absolute;top:-6px;right:-6px;min-width:22px;height:22px;padding:0 6px;border-radius:999px;" +
-    "background:var(--orange);color:#fff;font:700 12px/22px system-ui,sans-serif;text-align:center;border:2px solid #fff}" +
+    "background:var(--orange-strong);color:#fff;font:700 12px/22px system-ui,sans-serif;text-align:center;border:2px solid #fff}" +
     "button:focus{outline:none}button:focus-visible,select:focus-visible,textarea:focus-visible,input:focus-visible" +
     "{outline:3px solid var(--orange);outline-offset:2px}" +
     ".menu{right:calc(16px + env(safe-area-inset-right));bottom:calc(var(--bm) + 60px + env(safe-area-inset-bottom));" +
@@ -158,7 +158,7 @@
     "background:transparent;color:var(--fg);text-align:left;cursor:pointer;font-weight:600}" +
     ".menu button:hover,.menu button:focus-visible{background:var(--hover)}" +
     ".menu .ready{color:var(--s-redo)}" +
-    ".dot{display:inline-block;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--orange);color:#fff;" +
+    ".dot{display:inline-block;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--orange-strong);color:#fff;" +
     "font:700 12px/22px system-ui,sans-serif;text-align:center}" +
     // Rutorna: <dialog> med showModal(). Bottenark på mobil, centrerad ruta på dator.
     ".dlg{position:fixed;inset:auto 0 0 0;margin:0;width:100%;max-width:100%;max-height:92vh;max-height:92dvh;padding:0;border:0;" +
@@ -191,7 +191,7 @@
     "font-weight:600;cursor:pointer}" +
     ".b:hover{background:var(--hover)}" +
     ".b.p{background:var(--navy);border-color:var(--navy);color:#fff}.b.p:hover{background:var(--navy2)}" +
-    ".b.o{background:var(--orange);border-color:var(--orange);color:#fff}" +
+    ".b.o{background:var(--orange-strong);border-color:var(--orange-strong);color:#fff}" +
     ".b[disabled]{opacity:.55;cursor:default}" +
     ".hint{color:var(--muted);font-size:14px;margin:6px 0 0}" +
     ".err{margin:12px 0 0;padding:10px 12px;border-radius:10px;background:var(--err-bg);color:var(--err);font-weight:600}" +
@@ -287,7 +287,7 @@
       function (e) {
         // Medan vår modala ruta är öppen hör alla tangenter till den, även om fokus hamnat på body
         // (t.ex. när en knapp låses under sparning). Annars skulle Escape stänga appens dialog.
-        if (!inside(e) && !(dlgOpen && hasDialog)) return;
+        if (!inside(e) && !(dlgOpen && hasDialog && dlg.open)) return; // dlg.open: misslyckas showModal låses aldrig appens tangentbord
         e.stopPropagation(); // standardbeteendet (skriva, Tab, Enter, Escape för <dialog>) påverkas inte
         onKey(e);
       },
@@ -437,12 +437,20 @@
   function showDialog(title) {
     dlgTitle.textContent = title;
     if (!dlgOpen) {
-      dlgOpen = true;
-      if (hasDialog) dlg.showModal();
-      else {
+      var modal = false;
+      if (hasDialog) {
+        try {
+          dlg.showModal();
+          modal = true;
+        } catch (err) {
+          modal = false; // t.ex. om elementet inte är anslutet; visa rutan utan top layer i stället
+        }
+      }
+      if (!modal) {
         dlg.setAttribute("open", "");
         dlg.parentNode.insertBefore(h("div", { class: "shade" }), dlg);
       }
+      dlgOpen = true;
     }
   }
 

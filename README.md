@@ -140,7 +140,7 @@ export function HjalpAdapter() {
 }
 ```
 
-Montera `<HjalpAdapter />` en gång i appens rot, och ta bort appens egen feedbackknapp när den gemensamma är på plats. För TypeScript räcker en enkel deklaration, t.ex. `declare global { interface Window { BinokelHjalp?: any } }`.
+Montera `<HjalpAdapter />` en gång i appens rot, och ta bort appens egen feedbackknapp och Academys gamla `iris.js` (komponenten FragaIris) när den gemensamma är på plats, så att det bara finns en Hjälp-knapp. För TypeScript räcker en enkel deklaration, t.ex. `declare global { interface Window { BinokelHjalp?: any } }`.
 
 ## Statusflödet
 
@@ -184,3 +184,11 @@ Filen publiceras direkt från `main`, utan byggsteg:
 3. Kontrollera efter publicering att filen har den nya versionen (`BinokelHjalp.version`) och testa i minst en app på mobil och dator.
 
 GitHub Pages cachar filer i upp till 10 minuter, så en ändring kan dröja några minuter innan den syns i apparna.
+
+## Bra att veta
+- Medan delens ruta är öppen, eller när man trycker på Hjälp-knappen, stoppas `focusout` i capture-fasen så att appens Radix-dialog inte tar tillbaka fokus. Det betyder att appens `onBlur` inte körs i det ögonblicket; spara inte data enbart i `onBlur` i fält som kan vara öppna samtidigt.
+- Vit text ligger på den mörkare orangea färgen `#b54d00` (kontrast minst 4,5:1); den ljusare `#e6670c` används bara för ramar och fokus.
+
+## Ändringar
+- 1.0.1: tangentbordet i appen kan aldrig låsas om `showModal()` misslyckas; bättre kontrast för vit text på orange; README om att ta bort `iris.js` och appens egen knapp.
+
