@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Testapp med Radix-liknande dialog</title>
+<style>
+  /* Appens egen CSS – ska inte nå in i Hjälp-delen (Shadow DOM). */
+  * { font-family: Georgia, serif !important; }
+  button { background: hotpink !important; border-radius: 0 !important; }
+  body { margin: 0; padding: 24px; background: #f4f5f8; color: #222; }
+  nav.bottom { position: fixed; left: 0; right: 0; bottom: 0; height: 60px; background: #fff; border-top: 1px solid #ccc;
+    display: flex; align-items: center; justify-content: center; }
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 50; }
+  .dialog { position: fixed; z-index: 51; top: 15%; left: 50%; transform: translateX(-50%); width: min(420px, 90vw);
+    background: #fff; padding: 20px; border-radius: 12px; pointer-events: auto; }
+  .dialog input { width: 100%; font-size: 16px; padding: 8px; }
+</style>
+</head>
+<body>
+  <h1>Testapp</h1>
+  <p>En sida som efterliknar en app med en Radix/shadcn-dialog.</p>
+  <button id="open-app-dialog" type="button">Öppna appens dialog</button>
+  <nav class="bottom">Appens bottenmeny</nav>
+
+  <script>
+    // Efterliknar Radix Dialog (modal): body{pointer-events:none}, fokusfälla på document (focusin/focusout),
+    // stäng vid pointerdown utanför och Escape i capture-fasen på document, aria-hidden på syskon.
+    (function () {
+      var state = { dialog: null, closedBy: null };
+      window.__app = state;
+      function close(reason) {
+        if (!state.dialog) return;
+        state.closedBy = reason;
+        state.dialog.remove();
+        state.overlay.remove();
+        state.dialog = null;
+        document.body.style.pointerEvents = '';
+        document.removeEventListener('focusin', onFocusIn);
+        document.removeEventListener('focusout', onFocusOut);
+        document.removeEventListener('pointerdown', onPointerDown);
+        document.removeEventListener('keydown', onKey, true);
+        Array.prototype.forEach.call(document.body.children, function (c) { c.removeAttribute('aria-hidden'); });
+      }
+      function onFocusIn(e) {
+        if (state.dialog && !state.dialog.contains(e.target)) { state.stolen = (state.stolen || 0) + 1; state.input.focus(); }
+      }
+      function onFocusOut(e) {
+        if (e.relatedTarget && state.dialog && !state.dialog.contains(e.relatedTarget)) { state.stolen = (state.stolen || 0) + 1; state.input.focus(); }
+      }
+      function onPointerDown(e) {
+        if (state.dialog && !state.dialog.contains(e.target)) close('klick utanför');
+      }
+      function onKey(e) { if (e.key === 'Escape') close('Escape'); }
+      document.getElementById('open-app-dialog').addEventListener('click', function () {
+        var overlay = document.createElement('div');
+        overlay.className = 'overlay';
+        var d = document.createElement('div');
+        d.className = 'dialog';
+        d.setAttribute('role', 'dialog');
+        d.setAttribute('data-state', 'open');
+        d.setAttribute('aria-modal', 'true');
+        d.id = 'app-dialog';
+        d.innerHTML = '<h2>Appens dialog</h2><label>Kundens anteckning <input id="app-input"></label>';
+        document.body.appendChild(overlay);
+        document.body.appendChild(d);
+        state.dialog = d; state.overlay = overlay; state.input = d.querySelector('input'); state.closedBy = null; state.stolen = 0;
+        document.body.style.pointerEvents = 'none';
+        Array.prototype.forEach.call(document.body.children, function (c) {
+          if (c !== d && c.tagName !== 'SCRIPT') c.setAttribute('aria-hidden', 'true');
+        });
+        state.input.focus();
+        setTimeout(function () {
+          document.addEventListener('focusin', onFocusIn);
+          document.addEventListener('focusout', onFocusOut);
+          document.addEventListener('pointerdown', onPointerDown);
+          document.addEventListener('keydown', onKey, true);
+        }, 0);
+      });
+    })();
+  </script>
+
+  <script src="../hjalp.js"></script>
+  <script>
+    // Testadapter: håller allt i minnet och loggar anropen.
+    (function () {
+      var q = new URLSearchParams(location.search);
+      var calls = [];
+      var items = [
+        { id: 'a1', number: 12, text: 'Knappen Spara syns inte på iPad.', status: 'redo_att_testa', createdAt: '2026-11-01T10:00:00Z', updatedAt: '2026-11-08T10:00:00Z', answer: 'Rättat, knappen ligger nu ovanför tangentbordet.' },
+        { id: 'a2', number: 13, text: 'Fel datum i listan.', status: 'redo_att_testa', createdAt: '2026-11-02T10:00:00Z', updatedAt: '2026-11-08T11:00:00Z' },
+        { id: 'a3', number: 9, text: 'Lägg till sök.', status: 'ny', createdAt: '2026-11-03T10:00:00Z', updatedAt: '2026-11-03T10:00:00Z' },
+        { id: 'a4', number: 4, text: 'Texten var för liten.', status: 'godkand', createdAt: '2026-10-20T10:00:00Z', updatedAt: '2026-10-25T10:00:00Z' },
+        { id: 'a5', number: 7, text: 'Utskriften blev tom.', status: 'ateroppnad', createdAt: '2026-10-22T10:00:00Z', updatedAt: '2026-11-05T10:00:00Z' }
+      ];
+      if (q.get('tom') === '1') items = [];
+      window.__mock = { calls: calls, items: items, failSubmit: false };
+      window.__opened = [];
+      window.open = function (url, target, features) { window.__opened.push({ url: url, target: target, features: features }); return null; };
+      function clone(x) { return JSON.parse(JSON.stringify(x)); }
+      var feedback = {
+        submit: function (p) {
+          calls.push({ fn: 'submit', text: p.text, general: p.general, route: p.route, reporterId: p.reporterId,
+            screenshot: p.screenshot ? { type: p.screenshot.type, size: p.screenshot.size } : null });
+          if (window.__mock.failSubmit) return Promise.resolve({ ok: false, message: 'Servern svarade inte.' });
+          return Promise.resolve({ ok: true, message: 'Ärendenummer 42.' });
+        },
+        listMine: function () { calls.push({ fn: 'listMine' }); return Promise.resolve(clone(window.__mock.items)); },
+        approve: function (id) {
+          calls.push({ fn: 'approve', id: id });
+          window.__mock.items.forEach(function (x) { if (x.id === id) x.status = 'godkand'; });
+          return Promise.resolve();
+        },
+        reopen: function (id, note) {
+          calls.push({ fn: 'reopen', id: id, note: note });
+          window.__mock.items.forEach(function (x) { if (x.id === id) x.status = 'ateroppnad'; });
+          return Promise.resolve();
+        }
+      };
+      if (q.get('skarmbild') !== '0') {
+        feedback.captureScreenshot = function () {
+          var c = document.createElement('canvas');
+          c.width = 320; c.height = 200;
+          var g = c.getContext('2d');
+          g.fillStyle = '#f4f5f8'; g.fillRect(0, 0, 320, 200);
+          g.fillStyle = '#2d3e66'; g.font = '24px sans-serif'; g.fillText('Testappens sida', 40, 100);
+          return new Promise(function (r) { c.toBlob(r, 'image/png'); });
+        };
+      }
+      if (q.get('personer') !== '0') {
+        feedback.reporters = function () { return Promise.resolve([{ id: 'p1', name: 'Anna Testsson' }, { id: 'p2', name: 'Bo Provare' }]); };
+      }
+      window.BinokelHjalp.init({ app: 'testapp', iris: true, bottom: 16, bottomMobile: 72, feedback: feedback });
+    })();
+  </script>
+</body>
+</html>
