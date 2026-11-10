@@ -94,7 +94,7 @@ async function suite(browser, label, contextOptions) {
     const label = await page.locator(sel.button).getAttribute("aria-label");
     ok(label === "Hjälp, 2 redo att testa", "aria-label: " + label);
     const bg = await page.locator(H + " .badge").evaluate((el) => getComputedStyle(el).backgroundColor);
-    ok(bg === "rgb(230, 103, 12)", "inte orange: " + bg);
+    ok(bg === "rgb(181, 77, 0)", "inte orange (#b54d00, kontrast för vit text): " + bg);
   });
 
   await test("menyn öppnas med aria-expanded, piltangenter och Escape", async () => {
