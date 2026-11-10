@@ -1,4 +1,4 @@
-# binokel-hjalp
+# niemis-hjalp
 
 Gemensam Hjälp- och feedbackdel för alla Binokels interna appar (Säljstödet, Personalappen, Insikt, Kunduppföljning, GlasFlow, Synpunkten, Optic Measure, Spargris, Anamnesportalen och Academy).
 
@@ -20,17 +20,17 @@ Daniel bestämde 2026-11-09 att alla appar ska ha en och samma Hjälp-knapp nere
 Lägg raden i `index.html`, före appens eget script:
 
 ```html
-<script src="https://binokel.github.io/binokel-hjalp/hjalp.js" defer></script>
+<script src="https://binokel.github.io/niemis-hjalp/hjalp.js" defer></script>
 ```
 
-Scriptet skapar `window.BinokelHjalp` och skickar händelsen `binokel-hjalp:klar` på `window` när det är laddat.
+Scriptet skapar `window.NiemisHjalp` och skickar händelsen `niemis-hjalp:klar` på `window` när det är laddat.
 
 ### 2. Adaptern
 
 Delen vet ingenting om appens databas. Appen ger den en adapter med sina egna funktioner:
 
 ```js
-window.BinokelHjalp.init({
+window.NiemisHjalp.init({
   app: "saljstodet",            // a–z, 0–9 och -
   iris: true,                   // visar "Fråga Iris" (false döljer den)
   bottom: 16,                   // avstånd från nederkanten i px från 768 px bredd
@@ -55,11 +55,12 @@ window.BinokelHjalp.init({
 Övriga anrop:
 
 ```js
-window.BinokelHjalp.refresh();       // hämta ny räkning, t.ex. efter inloggning
-window.BinokelHjalp.hide();          // dölj knappen, t.ex. i kundvända vyer
-window.BinokelHjalp.show();
-window.BinokelHjalp.openFeedback();  // öppna Ge feedback från appens egen knapp
-window.BinokelHjalp.openMine();      // öppna Min feedback, t.ex. från en banner
+window.NiemisHjalp.refresh();       // hämta ny räkning, t.ex. efter inloggning
+window.NiemisHjalp.hide();          // dölj knappen, t.ex. i kundvända vyer
+window.NiemisHjalp.show();
+window.NiemisHjalp.openFeedback();  // öppna Ge feedback från appens egen knapp
+window.NiemisHjalp.openMine();      // öppna Min feedback, t.ex. från en banner
+window.NiemisHjalp.reset();         // vid utloggning: stänger rutan och glömmer utkast, vald person och räkning
 ```
 
 ### 3. Exempel: React och Supabase
@@ -82,7 +83,7 @@ export function HjalpAdapter() {
 
   useEffect(() => {
     const start = () =>
-      window.BinokelHjalp?.init({
+      window.NiemisHjalp?.init({
         app: "saljstodet",
         iris: true,
         bottom: 16,
@@ -132,15 +133,15 @@ export function HjalpAdapter() {
         },
       });
 
-    if (window.BinokelHjalp) start();
-    else window.addEventListener("binokel-hjalp:klar", start, { once: true });
+    if (window.NiemisHjalp) start();
+    else window.addEventListener("niemis-hjalp:klar", start, { once: true });
   }, [user]);
 
   return null;
 }
 ```
 
-Montera `<HjalpAdapter />` en gång i appens rot, och ta bort appens egen feedbackknapp och Academys gamla `iris.js` (komponenten FragaIris) när den gemensamma är på plats, så att det bara finns en Hjälp-knapp. För TypeScript räcker en enkel deklaration, t.ex. `declare global { interface Window { BinokelHjalp?: any } }`.
+Montera `<HjalpAdapter />` en gång i appens rot, och ta bort appens egen feedbackknapp och Academys gamla `iris.js` (komponenten FragaIris) när den gemensamma är på plats, så att det bara finns en Hjälp-knapp. För TypeScript räcker en enkel deklaration, t.ex. `declare global { interface Window { NiemisHjalp?: any } }`.
 
 ## Statusflödet
 
@@ -178,10 +179,10 @@ Testerna kör Playwright med Chromium, med iPhone 13-emulering och på dator, mo
 Filen publiceras direkt från `main`, utan byggsteg:
 
 1. Slå på GitHub Pages en gång (kräver administratörsbehörighet för repot):
-   `gh api -X POST repos/Binokel/binokel-hjalp/pages -f "source[branch]=main" -f "source[path]=/"`
+   `gh api -X POST repos/Binokel/niemis-hjalp/pages -f "source[branch]=main" -f "source[path]=/"`
    eller under Settings → Pages: "Deploy from a branch", `main`, `/ (root)`.
-2. Varje merge till `main` publiceras sedan automatiskt på https://binokel.github.io/binokel-hjalp/hjalp.js.
-3. Kontrollera efter publicering att filen har den nya versionen (`BinokelHjalp.version`) och testa i minst en app på mobil och dator.
+2. Varje merge till `main` publiceras sedan automatiskt på https://binokel.github.io/niemis-hjalp/hjalp.js.
+3. Kontrollera efter publicering att filen har den nya versionen (`NiemisHjalp.version`) och testa i minst en app på mobil och dator.
 
 GitHub Pages cachar filer i upp till 10 minuter, så en ändring kan dröja några minuter innan den syns i apparna.
 

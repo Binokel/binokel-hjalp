@@ -1,14 +1,14 @@
-/* Binokel Hjälp – en gemensam Hjälp-knapp med "Fråga Iris" och "Ge feedback" för alla Binokels appar.
-   https://binokel.github.io/binokel-hjalp/hjalp.js
+/* Niemis Hjälp – en gemensam Hjälp-knapp med "Fråga Iris" och "Ge feedback" för alla Binokels appar.
+   https://binokel.github.io/niemis-hjalp/hjalp.js
    Regler: ren ES2018 utan beroenden. Delen gör inga egna nätverksanrop, sätter inga cookies och
-   sparar inget i webbläsaren. All data går via appens adapter (window.BinokelHjalp.init({ feedback })).
+   sparar inget i webbläsaren. All data går via appens adapter (window.NiemisHjalp.init({ feedback })).
    Allt ritas i Shadow DOM och läggs i webbläsarens top layer (Popover API och <dialog>), så att det
    syns och går att använda ovanpå appens egna dialoger. Se README.md. */
 (function () {
   "use strict";
-  if (window.BinokelHjalp && window.BinokelHjalp.version) return;
+  if (window.NiemisHjalp && window.NiemisHjalp.version) return;
 
-  var VERSION = "1.0.1";
+  var VERSION = "1.1.0";
   var IRIS_URL = "https://northern-lens-learning-quest.lovable.app/fraga?inbaddad=1&app=";
   var Z = 2147483000;
   var STATUS = {
@@ -215,8 +215,8 @@
     var el = document.createElement("div");
     if (!el.attachShadow) return; // utan Shadow DOM kan appens CSS krocka – då ingen knapp
     host = el;
-    host.id = "binokel-hjalp";
-    host.setAttribute("data-binokel-hjalp", VERSION);
+    host.id = "niemis-hjalp";
+    host.setAttribute("data-niemis-hjalp", VERSION);
     // Appens modala dialog (Radix/shadcn) sätter body{pointer-events:none}. Värdelementet tar tillbaka klicken.
     host.style.setProperty("pointer-events", "auto", "important");
     root = host.attachShadow({ mode: "open" });
@@ -894,7 +894,7 @@
     var o = options || {};
     var app = String(o.app || "").toLowerCase();
     if (!/^[a-z0-9-]{1,40}$/.test(app)) {
-      if (window.console) console.warn("[BinokelHjalp] app ska vara a–z, 0–9 och -. Använder 'annan'.");
+      if (window.console) console.warn("[NiemisHjalp] app ska vara a–z, 0–9 och -. Använder 'annan'.");
       app = "annan";
     }
     var num = function (v, d) {
@@ -922,7 +922,7 @@
   }
 
   function need() {
-    if (!cfg) throw new Error("[BinokelHjalp] Anropa init() först.");
+    if (!cfg) throw new Error("[NiemisHjalp] Anropa init() först.");
   }
 
   var api = {
@@ -954,10 +954,27 @@
       if (!menuOpen && !dlgOpen) rememberFocus();
       openMine();
     },
+    // Vid utloggning: stäng allt och glöm utkast, vald person och räkning, så att nästa person
+    // på samma enhet inte ser något av det.
+    reset: function () {
+      refreshSeq++;
+      draft = { text: "", general: false, reporterId: "" };
+      formRefs = null; // så att stängningen inte sparar tillbaka den gamla texten som utkast
+      if (btn) closeMenu(false);
+      if (dlg && dlgOpen) {
+        if (hasDialog) {
+          if (dlg.open) dlg.close();
+        } else {
+          dlg.removeAttribute("open");
+          onDialogClosed();
+        }
+      }
+      setCount(0);
+    },
   };
-  window.BinokelHjalp = Object.freeze(api);
+  window.NiemisHjalp = Object.freeze(api);
   try {
-    window.dispatchEvent(new CustomEvent("binokel-hjalp:klar"));
+    window.dispatchEvent(new CustomEvent("niemis-hjalp:klar"));
   } catch (e) {
     /* gamla webbläsare */
   }
