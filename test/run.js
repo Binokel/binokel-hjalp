@@ -27,7 +27,7 @@ async function test(name, fn) {
   }
 }
 
-const H = "#binokel-hjalp";
+const H = "#niemis-hjalp";
 const sel = {
   button: H + " button[aria-haspopup=menu]",
   menu: H + " [role=menu]",
@@ -44,7 +44,7 @@ async function calls(page, fn) {
 }
 async function shadowActive(page) {
   return page.evaluate(() => {
-    const host = document.getElementById("binokel-hjalp");
+    const host = document.getElementById("niemis-hjalp");
     if (document.activeElement !== host) return "utanför: " + (document.activeElement && document.activeElement.id);
     const a = host.shadowRoot.activeElement;
     return a ? a.tagName.toLowerCase() + (a.id ? "#" + a.id : "") : "ingen";
@@ -73,7 +73,7 @@ async function suite(browser, label, contextOptions) {
     if (mobile) ok(box.width === 48, "mobilknappen ska vara rund 48 px, bredd " + box.width);
     else ok(await page.locator(H + " .lbl").isVisible(), "texten Hjälp syns inte på dator");
     const top = await page.evaluate(() =>
-      document.getElementById("binokel-hjalp").shadowRoot.querySelector(".fab").matches(":popover-open")
+      document.getElementById("niemis-hjalp").shadowRoot.querySelector(".fab").matches(":popover-open")
     );
     ok(top, "knappen ligger inte i top layer");
     const bg = await b.evaluate((el) => getComputedStyle(el).backgroundColor);
@@ -88,7 +88,7 @@ async function suite(browser, label, contextOptions) {
 
   await test("orange siffra visar antal redo att testa", async () => {
     await page.waitForFunction(() => {
-      const b = document.getElementById("binokel-hjalp").shadowRoot.querySelector(".badge");
+      const b = document.getElementById("niemis-hjalp").shadowRoot.querySelector(".badge");
       return b && !b.hidden && b.textContent === "2";
     });
     const label = await page.locator(sel.button).getAttribute("aria-label");
@@ -109,7 +109,7 @@ async function suite(browser, label, contextOptions) {
     ok(heights.every((hh) => hh >= 48), "rader lägre än 48 px: " + heights);
     ok((await shadowActive(page)) === "button", "fokus inte på första raden");
     await page.keyboard.press("ArrowDown");
-    const second = await page.evaluate(() => document.getElementById("binokel-hjalp").shadowRoot.activeElement.textContent);
+    const second = await page.evaluate(() => document.getElementById("niemis-hjalp").shadowRoot.activeElement.textContent);
     ok(second === "Ge feedback", "ArrowDown gick till " + second);
     await page.screenshot({ path: path.join(SHOTS, label + "-meny.png") });
     await page.keyboard.press("Escape");
@@ -252,7 +252,7 @@ async function suite(browser, label, contextOptions) {
     const a = (await calls(page, "approve"))[0];
     ok(a && a.id === "a2", "approve: " + JSON.stringify(a));
     ok(await appDialogOpen(page), "appens dialog stängdes");
-    await page.waitForFunction(() => document.getElementById("binokel-hjalp").shadowRoot.querySelector(".badge").hidden);
+    await page.waitForFunction(() => document.getElementById("niemis-hjalp").shadowRoot.querySelector(".badge").hidden);
     await page.keyboard.press("Escape");
     await page.locator(sel.dialog).waitFor({ state: "hidden" });
     const label2 = await page.locator(sel.button).getAttribute("aria-label");
@@ -267,22 +267,37 @@ async function suite(browser, label, contextOptions) {
   });
 
   await test("hide() och show()", async () => {
-    await page.evaluate(() => window.BinokelHjalp.hide());
+    await page.evaluate(() => window.NiemisHjalp.hide());
     await page.locator(sel.button).waitFor({ state: "hidden" });
-    await page.evaluate(() => window.BinokelHjalp.show());
+    await page.evaluate(() => window.NiemisHjalp.show());
     await page.locator(sel.button).waitFor({ state: "visible" });
   });
 
   await test("openMine() och refresh() från appen", async () => {
     await page.evaluate(() => {
       window.__mock.items.push({ id: "b1", text: "Ny rättning", status: "redo_att_testa", createdAt: "2026-11-09T08:00:00Z", updatedAt: "2026-11-09T08:00:00Z" });
-      return window.BinokelHjalp.refresh();
+      return window.NiemisHjalp.refresh();
     });
     ok((await page.locator(H + " .badge").innerText()) === "1", "refresh uppdaterade inte siffran");
-    await page.evaluate(() => window.BinokelHjalp.openMine());
+    await page.evaluate(() => window.NiemisHjalp.openMine());
     await page.locator(H + ' .item[data-id="b1"]').waitFor();
     await page.keyboard.press("Escape");
     await page.locator(sel.dialog).waitFor({ state: "hidden" });
+  });
+
+  await test("reset() vid utloggning: rutan stängs och utkast och siffra glöms", async () => {
+    await page.evaluate(() => window.NiemisHjalp.openFeedback());
+    await page.locator(sel.text).waitFor();
+    await page.fill(sel.text, "Förra personens utkast");
+    await page.evaluate(() => window.NiemisHjalp.reset());
+    await page.locator(sel.dialog).waitFor({ state: "hidden" });
+    ok(await page.locator(H + " .badge").isHidden(), "siffran från förra personen syns kvar");
+    await page.evaluate(() => window.NiemisHjalp.openFeedback());
+    await page.locator(sel.text).waitFor();
+    ok((await page.inputValue(sel.text)) === "", "utkastet låg kvar efter reset()");
+    await page.keyboard.press("Escape");
+    await page.locator(sel.dialog).waitFor({ state: "hidden" });
+    await page.evaluate(() => window.NiemisHjalp.refresh());
   });
 
   ok(errors.length === 0, "sidfel: " + errors.join("; "));
