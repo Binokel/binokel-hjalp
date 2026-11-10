@@ -266,6 +266,44 @@ async function suite(browser, label, contextOptions) {
     ok(!(await appDialogOpen(page)), "appens egen stäng-vid-klick-utanför fungerar inte längre");
   });
 
+  await test("rullning i Min feedback stoppas inte av appens rullningsspärr (react-remove-scroll)", async () => {
+    if (!(await appDialogOpen(page))) await page.click("#open-app-dialog");
+    await page.evaluate(() => window.NiemisHjalp.openMine());
+    await page.locator(H + " .list").waitFor();
+    await page.waitForTimeout(50);
+    const r = await page.evaluate(() => {
+      const list = document.getElementById("niemis-hjalp").shadowRoot.querySelector(".list");
+      const res = {};
+      ["wheel", "touchmove"].forEach((t) => {
+        const ev = new Event(t, { bubbles: true, cancelable: true, composed: true });
+        list.dispatchEvent(ev);
+        res[t] = ev.defaultPrevented;
+      });
+      const out = new Event("wheel", { bubbles: true, cancelable: true, composed: true });
+      document.body.dispatchEvent(out);
+      res.utanfor = out.defaultPrevented;
+      return res;
+    });
+    ok(!r.wheel && !r.touchmove, "rullningen i rutan stoppades: " + JSON.stringify(r));
+    ok(r.utanfor, "testets rullningsspärr är inte aktiv: " + JSON.stringify(r));
+    await page.keyboard.press("Escape");
+    await page.locator(sel.dialog).waitFor({ state: "hidden" });
+  });
+
+  await test("reset() medan skärmbilden tas: rutan öppnas inte efteråt", async () => {
+    await page.evaluate(() => {
+      window.__mock.shotDelay = 300;
+      window.NiemisHjalp.openFeedback();
+      window.NiemisHjalp.reset();
+    });
+    await page.waitForTimeout(600);
+    ok(await page.locator(sel.dialog).isHidden(), "rutan öppnades efter reset()");
+    await page.evaluate(() => {
+      window.__mock.shotDelay = 0;
+      return window.NiemisHjalp.refresh();
+    });
+  });
+
   await test("hide() och show()", async () => {
     await page.evaluate(() => window.NiemisHjalp.hide());
     await page.locator(sel.button).waitFor({ state: "hidden" });
