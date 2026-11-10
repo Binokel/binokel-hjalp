@@ -75,6 +75,13 @@
           document.addEventListener('focusout', onFocusOut);
           document.addEventListener('pointerdown', onPointerDown);
           document.addEventListener('keydown', onKey, true);
+          // Som react-remove-scroll i Radix: rullning utanför appens dialog stoppas.
+          ['wheel', 'touchmove'].forEach(function (t) {
+            document.addEventListener(t, function (e) {
+              window.__blockedScroll = (window.__blockedScroll || 0);
+              if (!d.contains(e.target)) { e.preventDefault(); window.__blockedScroll++; }
+            }, { passive: false });
+          });
         }, 0);
       });
     })();
@@ -124,7 +131,8 @@
           var g = c.getContext('2d');
           g.fillStyle = '#f4f5f8'; g.fillRect(0, 0, 320, 200);
           g.fillStyle = '#2d3e66'; g.font = '24px sans-serif'; g.fillText('Testappens sida', 40, 100);
-          return new Promise(function (r) { c.toBlob(r, 'image/png'); });
+          var delay = window.__mock.shotDelay || 0;
+          return new Promise(function (r) { setTimeout(function () { c.toBlob(r, 'image/png'); }, delay); });
         };
       }
       if (q.get('personer') !== '0') {

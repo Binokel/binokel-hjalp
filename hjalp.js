@@ -8,7 +8,7 @@
   "use strict";
   if (window.NiemisHjalp && window.NiemisHjalp.version) return;
 
-  var VERSION = "1.1.0";
+  var VERSION = "1.1.1";
   var IRIS_URL = "https://northern-lens-learning-quest.lovable.app/fraga?inbaddad=1&app=";
   var Z = 2147483000;
   var STATUS = {
@@ -38,6 +38,7 @@
   var draft = { text: "", general: false, reporterId: "" };
   var shotUrl = null;
   var busyShot = false;
+  var resetGen = 0; // ökas av reset(), så att en pågående öppning avbryts
   var lastOutside = null; // senast fokuserade element i appen (utanför vår del)
   var prevFocus = null; // appens fokus innan vår del tog det, återställs när rutan stängs
 
@@ -277,7 +278,7 @@
   //  - keydown: Radix lyssnar efter Escape i capture-fasen på document, alltså innan händelsen når oss.
   //  - focusout: den skickas från appens fält (inte från oss) när fokus flyttas in till vår del.
   function shield() {
-    ["pointerdown", "mousedown", "touchstart", "focusin", "focusout", "keydown"].forEach(function (type) {
+    ["pointerdown", "mousedown", "touchstart", "focusin", "focusout", "keydown", "wheel", "touchmove"].forEach(function (type) {
       host.addEventListener(type, function (e) {
         e.stopPropagation();
       });
@@ -447,6 +448,7 @@
         }
       }
       if (!modal) {
+        dlg.parentNode.classList.add("nodlg"); // utan top layer: rutan och skuggan får z-index
         dlg.setAttribute("open", "");
         dlg.parentNode.insertBefore(h("div", { class: "shade" }), dlg);
       }
@@ -508,6 +510,7 @@
     if (!a.submit || busyShot) return;
     if (dlgOpen) closeDialog();
     closeMenu(false);
+    var gen = resetGen;
     var shot = null;
     var shotFailed = false;
     if (typeof a.captureScreenshot === "function") {
@@ -524,6 +527,7 @@
       host.style.visibility = "";
       busyShot = false;
     }
+    if (gen !== resetGen) return; // reset() under skärmbilden: öppna inte rutan med förra personens skärm
     renderFeedback(shot, shotFailed);
   }
 
@@ -958,6 +962,7 @@
     // på samma enhet inte ser något av det.
     reset: function () {
       refreshSeq++;
+      resetGen++;
       draft = { text: "", general: false, reporterId: "" };
       formRefs = null; // så att stängningen inte sparar tillbaka den gamla texten som utkast
       if (btn) closeMenu(false);
